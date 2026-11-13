@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int       @id @default(autoincrement())
+  email                String    @unique
+  name                 String
+  password             String
+  role                 String    @default("MEMBER") // ADMIN, COACH, RECEPTIONIST, MEMBER
+
+  matricule            String?   @unique
+  subscriptionEnd      DateTime?
+  fairPlayBlockedUntil DateTime?
+  absencesCount        Int       @default(0)
+
+  reservations         Reservation[]
+  sessionsAsCoach      Session[]
+  transactions         MembershipTransaction[]
+
+  createdAt            DateTime  @default(now())
+}
+
+model Session {
+  id           Int           @id @default(autoincrement())
+  title        String
+  dayOfWeek    String?
+  startTime    DateTime
+  endTime      DateTime
+  capacity     Int
+  status       String        @default("SCHEDULED") // SCHEDULED, CANCELLED
+
+  coachId      Int
+  coach        User          @relation(fields: [coachId], references: [id])
+  reservations Reservation[]
+}
+
+model Reservation {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  sessionId Int
+  session   Session  @relation(fields: [sessionId], references: [id])
+
+  status    String   @default("CONFIRMED") // CONFIRMED, WAITLIST, PRESENT, ABSENT
+  createdAt DateTime @default(now())
+}
+
+model MembershipTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  date      DateTime @default(now())
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  message   String
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model Activity {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+}
+
+model PricingPlan {
+  id          Int     @id @default(autoincrement())
+  name        String
+  price       String
+  description String
+  popular     Boolean @default(false)
+}
