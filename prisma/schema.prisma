@@ -79,3 +79,10 @@ model PricingPlan {
   description String
   popular     Boolean @default(false)
 }
+model OpeningHour {
+  id        Int      @id @default(autoincrement())
+  days      String   // Ex: "Lundi – Vendredi"
+  hours     String   // Ex: "06h00 – 00h00"
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}

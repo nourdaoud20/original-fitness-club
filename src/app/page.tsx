@@ -9,20 +9,22 @@ export default async function HomePage() {
   const session = await getSession();
 
   // Requêtes réelles vers SQLite (dev.db)
-  const [activities, pricingPlans, sessions, activeAlert, coachesCount] = await Promise.all([
-    prisma.activity.findMany({ orderBy: { id: "asc" } }),
-    prisma.pricingPlan.findMany({ orderBy: { id: "asc" } }),
-    prisma.session.findMany({
-      where: { status: "SCHEDULED" },
-      orderBy: { startTime: "asc" },
-      include: {
-        coach: { select: { name: true } },
-        reservations: { where: { status: "CONFIRMED" } },
-      },
-    }),
-    prisma.alert.findFirst({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.user.count({ where: { role: "COACH" } }),
-  ]);
+  const [activities, pricingPlans, sessions, activeAlert, coachesCount, openingHours] =
+    await Promise.all([
+      prisma.activity.findMany({ orderBy: { id: "asc" } }),
+      prisma.pricingPlan.findMany({ orderBy: { id: "asc" } }),
+      prisma.session.findMany({
+        where: { status: "SCHEDULED" },
+        orderBy: { startTime: "asc" },
+        include: {
+          coach: { select: { name: true } },
+          reservations: { where: { status: "CONFIRMED" } },
+        },
+      }),
+      prisma.alert.findFirst({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
+      prisma.user.count({ where: { role: "COACH" } }),
+      prisma.openingHour.findMany({ orderBy: { order: "asc" } }),
+    ]);
 
   const dashboardHref =
     session?.role === "ADMIN"
@@ -95,7 +97,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Localisation & Horaires du Club */}
+          {/* Localisation & Horaires du Club (Dynamiques depuis OpeningHour) */}
           <div className="space-y-4 rounded-2xl border border-neutral-800 bg-[#1A1A1A] p-6">
             <div className="rounded-xl border border-neutral-800 bg-[#121212] p-4">
               <p className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">Localisation</p>
@@ -103,11 +105,17 @@ export default async function HomePage() {
             </div>
             <div className="rounded-xl border border-neutral-800 bg-[#121212] p-4">
               <p className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">Horaires d&apos;ouverture</p>
-              <ul className="mt-2 space-y-1 text-sm text-neutral-300">
-                <li>Lundi – Vendredi : <span className="font-semibold text-white">06h00 – 00h00</span></li>
-                <li>Samedi : <span className="font-semibold text-white">08h00 – 19h00</span></li>
-                <li>Dimanche : <span className="font-semibold text-white">08h00 – 14h00</span></li>
-              </ul>
+              {openingHours.length === 0 ? (
+                <p className="mt-2 text-sm text-neutral-400">Horaires en cours de mise à jour.</p>
+              ) : (
+                <ul className="mt-2 space-y-1 text-sm text-neutral-300">
+                  {openingHours.map((item) => (
+                    <li key={item.id}>
+                      {item.days} : <span className="font-semibold text-white">{item.hours}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </section>
