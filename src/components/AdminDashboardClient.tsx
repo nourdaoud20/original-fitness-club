@@ -13,6 +13,14 @@ type SessionItem = {
   capacity: number;
   coach: { name: string };
 };
+type MemberItem = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  matricule: string | null;
+  subscriptionEnd: string | null;
+};
 type PricingItem = {
   id: number;
   name: string;
@@ -29,16 +37,27 @@ type HourItem = {
 export default function AdminDashboardClient({
   coaches,
   sessions,
+  members,
   pricingPlans,
   openingHours,
 }: {
   coaches: Coach[];
   sessions: SessionItem[];
+  members: MemberItem[];
   pricingPlans: PricingItem[];
   openingHours: HourItem[];
 }) {
   const router = useRouter();
   const [msg, setMsg] = useState("");
+
+  // Form Adhérent (Caisse)
+  const [memName, setMemName] = useState("");
+  const [memEmail, setMemEmail] = useState("");
+  const [memPhone, setMemPhone] = useState("");
+  const [memMatricule, setMemMatricule] = useState("OFC-2026-001");
+  const [memPassword, setMemPassword] = useState("OFC-2026-001");
+  const [memMonths, setMemMonths] = useState(1);
+  const [memAmount, setMemAmount] = useState(85);
 
   // Form Coach
   const [coachName, setCoachName] = useState("");
@@ -68,6 +87,42 @@ export default function AdminDashboardClient({
   const [actTitle, setActTitle] = useState("");
   const [actDesc, setActDesc] = useState("");
   const [alertMsg, setAlertMsg] = useState("");
+
+  async function handleCreateMember(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/admin/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: memName,
+        email: memEmail,
+        phone: memPhone,
+        matricule: memMatricule,
+        password: memPassword,
+        durationMonths: memMonths,
+        amountPaid: memAmount,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) return setMsg("❌ " + data.error);
+    setMsg(`✅ Compte créé pour ${memName} (Matricule: ${memMatricule}) !`);
+    setMemName("");
+    setMemEmail("");
+    setMemPhone("");
+    router.refresh();
+  }
+
+  async function handleRenewMember(memberId: number, months: number, amount: number) {
+    const res = await fetch("/api/admin/members", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId, durationMonths: months, amountPaid: amount }),
+    });
+    if (res.ok) {
+      setMsg(`✅ Abonnement renouvelé (+${months} mois) !`);
+      router.refresh();
+    }
+  }
 
   async function handleAddCoach(e: React.FormEvent) {
     e.preventDefault();
@@ -194,6 +249,132 @@ export default function AdminDashboardClient({
         </div>
       )}
 
+      {/* 0. Caisse & Gestion des Adhérents */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <form onSubmit={handleCreateMember} className="space-y-4 rounded-2xl border border-[#D4AF37]/40 bg-[#1A1A1A] p-6">
+          <h2 className="text-lg font-bold text-[#D4AF37]">Caisse · Inscrire un Nouvel Adhérent</h2>
+          <p className="text-xs text-neutral-400">
+            Crée le compte membre après encaissement à la réception.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              type="text"
+              placeholder="Nom complet (ex: Sarra Ben Ali)"
+              value={memName}
+              onChange={(e) => setMemName(e.target.value)}
+              required
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Téléphone (ex: 22 123 456)"
+              value={memPhone}
+              onChange={(e) => setMemPhone(e.target.value)}
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              type="email"
+              placeholder="Email du client"
+              value={memEmail}
+              onChange={(e) => setMemEmail(e.target.value)}
+              required
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Matricule (ex: OFC-2026-001)"
+              value={memMatricule}
+              onChange={(e) => {
+                setMemMatricule(e.target.value);
+                setMemPassword(e.target.value);
+              }}
+              required
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <input
+              type="text"
+              placeholder="Mot de passe initial"
+              value={memPassword}
+              onChange={(e) => setMemPassword(e.target.value)}
+              required
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+            <select
+              value={memMonths}
+              onChange={(e) => {
+                const m = Number(e.target.value);
+                setMemMonths(m);
+                setMemAmount(m === 1 ? 85 : m === 3 ? 220 : 720);
+              }}
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-3 py-2.5 text-sm"
+            >
+              <option value={1}>1 Mois (Mensuel)</option>
+              <option value={3}>3 Mois (Trimestriel)</option>
+              <option value={12}>12 Mois (Annuel)</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Montant (DT)"
+              value={memAmount}
+              onChange={(e) => setMemAmount(Number(e.target.value))}
+              required
+              className="rounded-lg border border-neutral-700 bg-[#121212] px-4 py-2.5 text-sm"
+            />
+          </div>
+          <button type="submit" className="w-full rounded-lg bg-[#D4AF37] py-2.5 text-sm font-bold text-black hover:bg-[#e5c158]">
+            + Encaisser &amp; Créer le Compte Adhérent
+          </button>
+        </form>
+
+        {/* Liste des Adhérents & Renouvellement */}
+        <div className="space-y-4 rounded-2xl border border-neutral-800 bg-[#1A1A1A] p-6">
+          <h2 className="text-lg font-bold text-[#D4AF37]">Adhérents ({members.length})</h2>
+          {members.length === 0 ? (
+            <p className="text-sm text-neutral-400">Aucun adhérent enregistré pour le moment.</p>
+          ) : (
+            <div className="max-h-72 space-y-2.5 overflow-y-auto pr-1">
+              {members.map((m) => {
+                const isActive = m.subscriptionEnd && new Date(m.subscriptionEnd) > new Date();
+                return (
+                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-[#121212] p-3">
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        {m.name}{" "}
+                        <span className="text-xs font-normal text-[#D4AF37]">({m.matricule})</span>
+                      </p>
+                      <p className="text-xs text-neutral-400">{m.email}</p>
+                      <p className={`text-[11px] font-semibold ${isActive ? "text-emerald-400" : "text-red-400"}`}>
+                        {isActive
+                          ? `Actif jusqu'au ${new Date(m.subscriptionEnd!).toLocaleDateString("fr-FR")}`
+                          : "Abonnement expiré"}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => handleRenewMember(m.id, 1, 85)}
+                        className="rounded bg-neutral-800 px-2.5 py-1.5 text-xs font-bold text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+                      >
+                        +1 mois
+                      </button>
+                      <button
+                        onClick={() => handleRenewMember(m.id, 3, 220)}
+                        className="rounded bg-neutral-800 px-2.5 py-1.5 text-xs font-bold text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+                      >
+                        +3 mois
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 1. Coachs & Séances */}
       <div className="grid gap-8 lg:grid-cols-2">
         <form onSubmit={handleAddCoach} className="space-y-4 rounded-2xl border border-neutral-800 bg-[#1A1A1A] p-6">
@@ -305,9 +486,8 @@ export default function AdminDashboardClient({
         </form>
       </div>
 
-      {/* 2. Tarifs & Horaires d'ouverture (Saisons : Ramadan, Été, Normal) */}
+      {/* 2. Tarifs & Horaires d'ouverture */}
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Gestion Tarifs (PricingPlan) */}
         <div className="space-y-4 rounded-2xl border border-neutral-800 bg-[#1A1A1A] p-6">
           <h2 className="text-lg font-bold text-[#D4AF37]">3. Gérer les Tarifs (Abonnements)</h2>
           <form onSubmit={handleAddPricing} className="space-y-3">
@@ -331,7 +511,7 @@ export default function AdminDashboardClient({
             </div>
             <input
               type="text"
-              placeholder="Description (ex: Accès illimité musculation + cours collectifs)"
+              placeholder="Description"
               value={planDesc}
               onChange={(e) => setPlanDesc(e.target.value)}
               required
@@ -351,7 +531,6 @@ export default function AdminDashboardClient({
             </button>
           </form>
 
-          {/* Liste des tarifs actifs */}
           <div className="space-y-2 pt-2">
             {pricingPlans.map((p) => (
               <div key={p.id} className="flex items-center justify-between rounded-lg border border-neutral-800 bg-[#121212] px-4 py-2.5">
@@ -376,13 +555,8 @@ export default function AdminDashboardClient({
           </div>
         </div>
 
-        {/* Gestion Horaires d'Ouverture */}
         <div className="space-y-4 rounded-2xl border border-neutral-800 bg-[#1A1A1A] p-6">
           <h2 className="text-lg font-bold text-[#D4AF37]">4. Horaires d&apos;Ouverture (Ramadan / Été / Normal)</h2>
-          <p className="text-xs text-neutral-400">
-            Modifie directement les plages horaires ci-dessous pour les mettre à jour sur la vitrine.
-          </p>
-
           <div className="space-y-2.5">
             {openingHours.map((h) => (
               <div key={h.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-800 bg-[#121212] p-3">

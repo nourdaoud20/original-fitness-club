@@ -58,11 +58,17 @@ export default async function HomePage() {
               </Link>
             ) : (
               <>
-                <Link href="/login" className="rounded-lg px-4 py-2 text-sm font-semibold text-neutral-300 hover:text-white">
-                  Se connecter
-                </Link>
-                <Link href="/register" className="rounded-lg bg-[#D4AF37] px-4 py-2 text-sm font-bold text-black hover:bg-[#e5c158]">
-                  S&apos;inscrire
+                <a
+                  href="#tarifs"
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-neutral-300 hover:text-white"
+                >
+                  Nos Tarifs
+                </a>
+                <Link
+                  href="/login"
+                  className="rounded-lg bg-[#D4AF37] px-4 py-2 text-sm font-bold text-black hover:bg-[#e5c158]"
+                >
+                  Espace Membre
                 </Link>
               </>
             )}
@@ -91,7 +97,10 @@ export default async function HomePage() {
               >
                 {session ? "Accéder à mon tableau de bord" : "Accéder à mon espace"}
               </Link>
-              <a href="#planning" className="rounded-lg border border-neutral-700 px-6 py-3 font-semibold hover:border-[#D4AF37]">
+              <a
+                href="#planning"
+                className="rounded-lg border border-neutral-700 px-6 py-3 font-semibold hover:border-[#D4AF37]"
+              >
                 Voir le planning ({sessions.length})
               </a>
             </div>
@@ -104,7 +113,9 @@ export default async function HomePage() {
               <p className="mt-1 font-medium">24 Avenue de la paix, Dar-Chaabane, Tunisia</p>
             </div>
             <div className="rounded-xl border border-neutral-800 bg-[#121212] p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">Horaires d&apos;ouverture</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">
+                Horaires d&apos;ouverture
+              </p>
               {openingHours.length === 0 ? (
                 <p className="mt-2 text-sm text-neutral-400">Horaires en cours de mise à jour.</p>
               ) : (
@@ -174,7 +185,7 @@ export default async function HomePage() {
         </section>
 
         {/* Grille Tarifaire (Table PricingPlan) */}
-        <section className="space-y-6">
+        <section id="tarifs" className="space-y-6">
           <h2 className="text-2xl font-bold">Tarifs &amp; Abonnements</h2>
           {pricingPlans.length === 0 ? (
             <p className="rounded-xl border border-neutral-800 bg-[#1A1A1A] p-6 text-sm text-neutral-400">
